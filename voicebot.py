@@ -2,6 +2,7 @@
 import asyncio
 from functools import singledispatch
 from io import BytesIO
+from itertools import chain
 from pickle import TRUE
 from queue import Queue
 from collections import deque
@@ -29,9 +30,10 @@ class TTSBot(commands.Cog):
         
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
-        if not after.channel:
-            return
-        bot = nextcord.utils.find(lambda x: x.id == self.id, after.channel.members)
+        channel = after.channel
+        if not channel:
+            channel = before.channel
+        bot = nextcord.utils.find(lambda x: x.id == self.id, channel.members)
         if not bot:
             return
         #each of these are voiceclient instances

@@ -1,11 +1,11 @@
 
 import asyncio
-from functools import singledispatch
 from io import BytesIO
 from itertools import chain
 from pickle import TRUE
 from queue import Queue
 from collections import deque
+from click import pass_context
 from discord import Guild, VoiceClient
 from dotenv import load_dotenv
 import gtts
@@ -22,7 +22,18 @@ class TTSBot(commands.Cog):
         self.id = 542480024779882496
         self.queue = deque()
         self.priority_queue = deque()
-        # self.ctx = None
+    
+        self.accents = {
+            "US": "com",
+            "AU": "com.au",
+            "UK": "co.uk",
+            "CA": "ca",
+            "IN": "co.in",
+            "IE": "ie",
+            "SA": "co.za"
+        }
+        
+        self.currentAccent = self.accents["US"]
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -63,8 +74,8 @@ class TTSBot(commands.Cog):
     async def say(self, ctx: commands.Context, *, message):
         """Plays a file from the local filesystem"""
         
-        self.ctx = ctx
-        self.queue.append({"text": message, "context": ctx})
+        text = f"{ctx.author.display_name} says {message}"
+        self.queue.append({"text": text, "context": ctx})
 
         # self.queue.append(f"{ctx.author.display_name} says: {query}")
 
@@ -92,6 +103,20 @@ class TTSBot(commands.Cog):
             else:
                 await ctx.send("You are not connected to a voice channel.")
                 raise commands.CommandError("Author not connected to a voice channel.")
+    
+    @commands.command(pass_context=True)
+    async def accent(self, ctx: commands.Context, arg: str):
+        if arg == "list":
+            await ctx.reply("Australia: AU\nUnited Kingdom: UK\n" +
+                            "United States: US\nCanada: CA\n" +
+                            "India: IN\nIreland: IE\nSouth Africa: SA")
+            return
+        if arg.upper() in self.accents:
+            self.currentAccent = self.accents[arg.upper()]
+            await ctx.reply("Accent updated.")
+            return
+        await ctx.reply("Not a valid accent code.")
+            
 
     @tasks.loop(seconds=2)
     async def speech_task(self):
@@ -124,7 +149,7 @@ class TTSBot(commands.Cog):
                 return True
             
     def _speak_text(self, voice_client: VoiceClient, text: str):
-        tts = gtts.gTTS(text, lang="en")
+        tts = gtts.gTTS(text, lang="en", tld=self.currentAccent)
         tts.save("/dev/shm/cowbot_audio.mp3")
         thing = nextcord.PCMVolumeTransformer(nextcord.FFmpegPCMAudio("/dev/shm/cowbot_audio.mp3", options="-vn"))
         voice_client.play(thing)

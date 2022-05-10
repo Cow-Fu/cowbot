@@ -1,11 +1,5 @@
 
-import asyncio
-from io import BytesIO
-from itertools import chain
-from pickle import TRUE
-from queue import Queue
 from collections import deque
-from click import pass_context
 from discord import Guild, VoiceClient
 from dotenv import load_dotenv
 import gtts
@@ -14,7 +8,6 @@ from nextcord import VoiceState, Member
 from nextcord.ext import commands, tasks
 import os
 
-load_dotenv()
 
 class TTSBot(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -38,7 +31,8 @@ class TTSBot(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.speech_task.start()
-        
+        print("Speech task started")
+
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
         channel = after.channel
@@ -118,7 +112,7 @@ class TTSBot(commands.Cog):
         await ctx.reply("Not a valid accent code.")
             
 
-    @tasks.loop(seconds=2)
+    @tasks.loop(seconds=1.5)
     async def speech_task(self):
         text = None
         voice_client = None
@@ -155,7 +149,9 @@ class TTSBot(commands.Cog):
         voice_client.play(thing)
         
         
-bot = commands.Bot(command_prefix=("Moo ", "moo "))
+if __name__ == "__main__":
+    load_dotenv()
+    bot = commands.Bot(command_prefix=("Moo ", "moo "))
 
-bot.add_cog(TTSBot(bot))
-bot.run(os.getenv('BOT_TOKEN'))
+    bot.add_cog(TTSBot(bot))
+    bot.run(os.getenv('BOT_TOKEN'))

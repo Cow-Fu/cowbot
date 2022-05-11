@@ -74,6 +74,10 @@ class TTSBot(commands.Cog):
         # self.queue.append(f"{ctx.author.display_name} says: {query}")
 
     @commands.command()
+    async def ssay(self, ctx: commands.Context, *, message):
+        self.queue.append({"text": message, "context": ctx})
+
+    @commands.command()
     async def volume(self, ctx, volume: int):
         """Changes the player's volume"""
 

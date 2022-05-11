@@ -3,6 +3,7 @@ import os
 from nextcord.ext import commands
 
 from dotenv import load_dotenv
+from voicebot import TTSBot
 
 load_dotenv()
 
@@ -20,4 +21,5 @@ async def guess(ctx):
 async def what(ctx: commands.Context):
     await ctx.channel.send("Chicken butt")
 
+bot.add_cog(TTSBot(bot))
 bot.run(os.getenv('BOT_TOKEN'))

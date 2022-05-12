@@ -7,7 +7,7 @@ from voicebot import TTSBot
 
 load_dotenv()
 
-bot = commands.Bot(command_prefix="moo ")
+bot = commands.Bot(command_prefix=("Moo ", "moo "))
 
 @bot.event
 async def on_ready():

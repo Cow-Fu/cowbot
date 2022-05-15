@@ -54,7 +54,7 @@ class TTSBot(commands.Cog):
         text = None
         if before.channel and after.channel:
             text = f"{member.display_name} has moved from {before.channel.name} to {after.channel.name}"
-            self.priority_queue.append({"text": text, "vc": voice})
+            self.priority_queue.append({"text": text, "vc": voice_client})
         elif not before.channel and after.channel:
             text = f"{member.display_name} has joined the chat"
             self.priority_queue.append({"text": text, "vc": voice_client})

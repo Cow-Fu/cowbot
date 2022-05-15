@@ -1,6 +1,6 @@
 
 from collections import deque
-from discord import Guild, VoiceClient
+from discord import Guild, VoiceChannel, VoiceClient
 from dotenv import load_dotenv
 import gtts
 import nextcord
@@ -33,6 +33,11 @@ class TTSBot(commands.Cog):
         self.speech_task.start()
         print("Speech task started")
 
+    def _member_join(self, member: Member, bot: commands.Bot, afterChannel: VoiceState):
+        pass
+    
+    # TODO: if both before and after are there, channel was switched
+    # so uh, do that
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
         channel = after.channel
@@ -47,13 +52,22 @@ class TTSBot(commands.Cog):
         if not voice_client:
             return
         text = None
-        if not before.channel and after.channel:
+        if before.channel and after.channel:
+            text = f"{member.display_name} has moved from {before.channel.name} to {after.channel.name}"
+            self.priority_queue.append({"text": text, "vc": voice})
+        elif not before.channel and after.channel:
             text = f"{member.display_name} has joined the chat"
             self.priority_queue.append({"text": text, "vc": voice_client})
         elif before.channel and not after.channel:
             text = f"{member.display_name} has left the chat"
             self.priority_queue.append({"text": text, "vc": voice_client})
-        
+
+        if not before.channel:
+            return
+        if len(before.channel.members) == 1:
+            if before.channel.members[0].id == self.id:
+                await voice_client.disconnect()
+            
 
     @commands.command()
     async def join(self, ctx, *, channel: nextcord.VoiceChannel):
@@ -73,6 +87,7 @@ class TTSBot(commands.Cog):
 
         # self.queue.append(f"{ctx.author.display_name} says: {query}")
 
+    # TODO: needs to connect to channel just like say
     @commands.command()
     async def ssay(self, ctx: commands.Context, *, message):
         self.queue.append({"text": message, "context": ctx})
@@ -94,6 +109,7 @@ class TTSBot(commands.Cog):
         await ctx.voice_client.disconnect()
     
     @say.before_invoke
+    @ssay.before_invoke
     async def ensure_voice(self, ctx: commands.Context):
         if ctx.voice_client is None:
             if ctx.author.voice:
@@ -146,7 +162,25 @@ class TTSBot(commands.Cog):
                     return False
                 return True
             
+    @tasks.loop(seconds=5)
+    async def auto_leave(self):
+        for guild in self.bot.guilds:
+            for voice_channel in guild.voice_channels:
+                if len(voice_channel.members) == 1:
+                    member = voice_channel.members[0]
+                    if member.id == self.id:
+                        return
+                    bot = member
+                    voice_client: VoiceClient
+                    voice_client = nextcord.utils.find(lambda vc: vc.guild.id == bot.guild.id, self.bot.voice_clients)
+                    if voice_client.is_connected():
+                        await voice_client.disconnect()
+                        self.queue.clear()
+                        
+    
     def _speak_text(self, voice_client: VoiceClient, text: str):
+        if not voice_client.is_connected():
+            return
         tts = gtts.gTTS(text, lang="en", tld=self.currentAccent)
         tts.save("/dev/shm/cowbot_audio.mp3")
         thing = nextcord.PCMVolumeTransformer(nextcord.FFmpegPCMAudio("/dev/shm/cowbot_audio.mp3", options="-vn"))

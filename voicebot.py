@@ -6,6 +6,7 @@ import gtts
 import nextcord
 from nextcord import VoiceState, Member
 from nextcord.ext import commands, tasks
+from VoiceStateChangeType import VoiceStateChangeType
 import os
 
 
@@ -33,15 +34,39 @@ class TTSBot(commands.Cog):
         self.speech_task.start()
         print("Speech task started")
 
-    def _member_join(self, member: Member, bot: commands.Bot, afterChannel: VoiceState):
-        pass
-    
-    # TODO: if both before and after are there, channel was switched
-    # so uh, do that
+    def _get_voice_state_change_type(self, before: VoiceState, after: VoiceState):
+        if before.channel and after.channel:
+            return VoiceStateChangeType.SWAP
+        elif not before.channel and after.channel:
+            return VoiceStateChangeType.JOIN
+        elif before.channel and not after.channel:
+            return VoiceStateChangeType.LEAVE
+        else:
+            return None
+        
+    def _member_join(self, member: Member, voice_client: VoiceClient):
+        text = f"{member.display_name} has joined the chat."
+        self.priority_queue.append({"text": text, "vc": voice_client})
+        
+    async def _member_leave(self, member: Member, bot: commands.Bot, voice_client: VoiceClient, voice_state: VoiceState):
+        text = f"{member.display_name} has left the chat."
+        self.priority_queue.append({"text": text, "vc": voice_client})
+        
+        if len(voice_state.channel.members) == 1:
+            if voice_state.channel.members[0].id == self.id:
+                await voice_client.disconnect()
+                
+                
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
-        channel = after.channel
-        if not channel:
+        voice_state_change = self._get_voice_state_change_type(before, after)
+        channel = None
+        if not voice_state_change:
+            return
+            
+        if voice_state_change == VoiceStateChangeType.JOIN:
+            channel = after.channel
+        else:
             channel = before.channel
         bot = nextcord.utils.find(lambda x: x.id == self.id, channel.members)
         if not bot:
@@ -51,23 +76,11 @@ class TTSBot(commands.Cog):
 
         if not voice_client:
             return
-        text = None
-        if before.channel and after.channel:
-            text = f"{member.display_name} has moved from {before.channel.name} to {after.channel.name}"
-            self.priority_queue.append({"text": text, "vc": voice_client})
-        elif not before.channel and after.channel:
-            text = f"{member.display_name} has joined the chat"
-            self.priority_queue.append({"text": text, "vc": voice_client})
-        elif before.channel and not after.channel:
-            text = f"{member.display_name} has left the chat"
-            self.priority_queue.append({"text": text, "vc": voice_client})
 
-        if not before.channel:
-            return
-        if len(before.channel.members) == 1:
-            if before.channel.members[0].id == self.id:
-                await voice_client.disconnect()
-            
+        if voice_state_change == VoiceStateChangeType.JOIN:
+            self._member_join(member, voice_client)
+        else:
+            self._member_leave(member, bot, voice_client, before)
 
     @commands.command()
     async def join(self, ctx, *, channel: nextcord.VoiceChannel):

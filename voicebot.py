@@ -80,7 +80,7 @@ class TTSBot(commands.Cog):
         if voice_state_change == VoiceStateChangeType.JOIN:
             self._member_join(member, voice_client)
         else:
-            self._member_leave(member, bot, voice_client, before)
+            await self._member_leave(member, bot, voice_client, before)
 
     @commands.command()
     async def join(self, ctx, *, channel: nextcord.VoiceChannel):

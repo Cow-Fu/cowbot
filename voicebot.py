@@ -35,12 +35,23 @@ class TTSBot(commands.Cog):
         print("Speech task started")
 
     def _get_voice_state_change_type(self, before: VoiceState, after: VoiceState):
-        if before.channel and after.channel:
-            return VoiceStateChangeType.SWAP
-        elif not before.channel and after.channel:
+        stateType = None
+        if before.channel:
+            if before.self_mute:
+                return VoiceStateChangeType.MUTE
+            if before.self_deaf:
+                return VoiceStateChangeType.DEAFEN
+            if after.channel:
+                return VoiceStateChangeType.SWAP
+            if not after.channel:
+                return VoiceStateChangeType.LEAVE
+        if after.channel:
+            # might not need these
+            if after.self_mute:
+                return VoiceStateChangeType.MUTE
+            if after.self_deaf:
+                return VoiceStateChangeType.DEAFEN
             return VoiceStateChangeType.JOIN
-        elif before.channel and not after.channel:
-            return VoiceStateChangeType.LEAVE
         else:
             return None
         
@@ -79,8 +90,10 @@ class TTSBot(commands.Cog):
 
         if voice_state_change == VoiceStateChangeType.JOIN:
             self._member_join(member, voice_client)
-        else:
+        elif voice_state_change == VoiceStateChangeType.LEAVE:
             await self._member_leave(member, bot, voice_client, before)
+        else:
+            return
 
     @commands.command()
     async def join(self, ctx, *, channel: nextcord.VoiceChannel):
@@ -175,20 +188,20 @@ class TTSBot(commands.Cog):
                     return False
                 return True
             
-    @tasks.loop(seconds=5)
-    async def auto_leave(self):
-        for guild in self.bot.guilds:
-            for voice_channel in guild.voice_channels:
-                if len(voice_channel.members) == 1:
-                    member = voice_channel.members[0]
-                    if member.id == self.id:
-                        return
-                    bot = member
-                    voice_client: VoiceClient
-                    voice_client = nextcord.utils.find(lambda vc: vc.guild.id == bot.guild.id, self.bot.voice_clients)
-                    if voice_client.is_connected():
-                        await voice_client.disconnect()
-                        self.queue.clear()
+    # @tasks.loop(seconds=5)
+    # async def auto_leave(self):
+    #     for guild in self.bot.guilds:
+    #         for voice_channel in guild.voice_channels:
+    #             if len(voice_channel.members) == 1:
+    #                 member = voice_channel.members[0]
+    #                 if member.id == self.id:
+    #                     return
+    #                 bot = member
+    #                 voice_client: VoiceClient
+    #                 voice_client = nextcord.utils.find(lambda vc: vc.guild.id == bot.guild.id, self.bot.voice_clients)
+    #                 if voice_client.is_connected():
+    #                     await voice_client.disconnect()
+    #                     self.queue.clear()
                         
     
     def _speak_text(self, voice_client: VoiceClient, text: str):

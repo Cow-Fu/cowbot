@@ -14,6 +14,7 @@ class TTSBot(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.id = 542480024779882496
+        self.path = os.getenv("MP3_PATH")
         self.queue = deque()
         self.priority_queue = deque()
     
@@ -208,8 +209,8 @@ class TTSBot(commands.Cog):
         if not voice_client.is_connected():
             return
         tts = gtts.gTTS(text, lang="en", tld=self.currentAccent)
-        tts.save("/dev/shm/cowbot_audio.mp3")
-        thing = nextcord.PCMVolumeTransformer(nextcord.FFmpegPCMAudio("/dev/shm/cowbot_audio.mp3", options="-vn"))
+        tts.save(self.path)
+        thing = nextcord.PCMVolumeTransformer(nextcord.FFmpegPCMAudio(self.path, options="-vn"))
         voice_client.play(thing)
         
         

@@ -209,7 +209,10 @@ class TTSBot(commands.Cog):
         if not voice_client.is_connected():
             return
         tts = gtts.gTTS(text, lang="en", tld=self.currentAccent)
-        tts.save(self.path)
+        try:
+            tts.save(self.path)
+        except AssertionError as e:
+            return
         thing = nextcord.PCMVolumeTransformer(nextcord.FFmpegPCMAudio(self.path, options="-vn"))
         voice_client.play(thing)
         

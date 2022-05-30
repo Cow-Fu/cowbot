@@ -1,17 +1,18 @@
 
 import json
 import os
-from discord import Role
+import pathlib
+from typing import Tuple
+from discord import Member, Role
 import nextcord
 from nextcord.ext import commands
-from emoji import UNICODE_EMOJI_ENGLISH
 
 
 class ReactionRoles(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.allowed_roles = [852806140614279168]
-        self.data_path = os.getenv("REACTION_ROLES_JSON")
+        self.data_path = os.path.join(pathlib.Path().resolve(), os.getenv("REACTION_ROLES_JSON"))
 
         if not os.path.exists(self.data_path):
             with open(self.data_path, "w+") as f:
@@ -50,26 +51,53 @@ class ReactionRoles(commands.Cog):
         self._write_json(self.data_path, self.data)
         
     async def _get_message_from_payload(self, payload: nextcord.RawReactionActionEvent)\
-        -> tuple(nextcord.Message, nextcord.TextChannel):
+        -> Tuple[nextcord.Message, nextcord.TextChannel]:
         channel = self.bot.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
         return (message, channel)
         
+    
+    def _parse_message(self, message: nextcord.Message, payload: nextcord.RawReactionActionEvent):
+        msgList = list(filter(lambda x: " :: " in x, message.content.split("\n")))
+        
+        pairs = []
+        for item in msgList:
+            split_message = item.split(" :: ")
+            if not len(split_message) == 2:
+                raise IndexError("Splitting message resulted in too many parts")
+            emo, role = split_message[0], split_message[1]
+            guild = self.bot.get_guild(payload.guild_id)
+            role = guild.get_role(int(role[3:-1]))
+            pairs.append((emo.strip(), role))
+        
+        return pairs
     
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: nextcord.RawReactionActionEvent):
         if not payload.message_id in self.data["RoleMessageIDs"]:
             return
 
-        message, channel = self._get_message_from_payload(payload)
-        msgList = list(filter(lambda x: " :: " in x, message.content.split("\n")))
-        
-        for item in msgList:
-            split_message = item.split(" :: ")
-            if not len(split_message) == 2:
+        message, channel = await self._get_message_from_payload(payload)
+        emoji_role_pairs = self._parse_message(message, payload)
+
+        for emoji, role in emoji_role_pairs:
+            if str(payload.emoji) == emoji:
+                await payload.member.add_roles(role)
                 return
-            emo, role = split_message[0], split_message[2]
-            if payload.emoji == emo:
-                pass
         
+    
+    @commands.Cog.listener()
+    async def on_raw_reaction_remove(self, payload: nextcord.RawReactionActionEvent):
+        if not payload.message_id in self.data["RoleMessageIDs"]:
+            return
+        message, channel = await self._get_message_from_payload(payload)
+        emoji_role_pairs = self._parse_message(message, payload)
+        print(emoji_role_pairs)
+
+        for emoji, role in emoji_role_pairs:
+            if str(payload.emoji) == emoji:
+                # use this to get the person
+                member = nextcord.utils.find(lambda x: x.id == payload.user_id, channel.guild.members)
+                await member.remove_roles(role)
+                return
         # lines = list(filter(message.content.split("\n"), lambda line: " :: " in line))

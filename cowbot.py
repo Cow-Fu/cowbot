@@ -1,6 +1,7 @@
 from contextvars import Context
 import os
 from nextcord.ext import commands
+import nextcord
 
 from dotenv import load_dotenv
 from ReactionRoles import ReactionRoles
@@ -8,7 +9,9 @@ from voicebot import TTSBot
 
 load_dotenv()
 
-bot = commands.Bot(command_prefix=("Moo ", "moo "))
+intents = nextcord.Intents.default()
+intents.members = True
+bot = commands.Bot(command_prefix=("Moo ", "moo "), intents=intents)
 
 @bot.event
 async def on_ready():
@@ -21,6 +24,7 @@ async def guess(ctx):
 @guess.command()
 async def what(ctx: commands.Context):
     await ctx.channel.send("Chicken butt")
+
 
 bot.add_cog(TTSBot(bot))
 bot.add_cog(ReactionRoles(bot))

@@ -97,7 +97,7 @@ class ReactionRoles(commands.Cog):
         for emoji, role in emoji_role_pairs:
             if str(payload.emoji) == emoji:
                 # use this to get the person
-                member = nextcord.utils.find(lambda x: x.id == payload.user_id, channel.guild.members)
+                member = channel.guild.get_member(payload.user_id)
                 await member.remove_roles(role)
                 return
         # lines = list(filter(message.content.split("\n"), lambda line: " :: " in line))

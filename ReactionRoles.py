@@ -20,21 +20,26 @@ class ReactionRoles(commands.Cog):
         with open(self.data_path, "r") as f:
             self.data = json.load(f)
 
+
     def _create_file(self, path):
         with open(self.data_path, "w+") as f:
             f.close()
             
+
     def _read_json(self, path):
         with open(path, "r") as fp:
             return json.load(fp)
         
+
     def _write_json(self, path, data):
         with open(path, "w") as f:
             json.dump(data, f)
-        
+
+
     def _has_permission(self, ctx: commands.Context):
         return ctx.author.guild_permissions.administrator
     
+
     @commands.command()
     async def setup(self, ctx: commands.Context):
         if not self._has_permission(ctx):
@@ -50,6 +55,7 @@ class ReactionRoles(commands.Cog):
         self.data["RoleMessageIDs"].append(message.id)
         self._write_json(self.data_path, self.data)
         
+
     async def _get_message_from_payload(self, payload: nextcord.RawReactionActionEvent)\
         -> Tuple[nextcord.Message, nextcord.TextChannel]:
         channel = self.bot.get_channel(payload.channel_id)
@@ -72,6 +78,7 @@ class ReactionRoles(commands.Cog):
         
         return pairs
     
+
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: nextcord.RawReactionActionEvent):
         if not payload.message_id in self.data["RoleMessageIDs"]:

@@ -35,6 +35,7 @@ class TTSBot(commands.Cog):
         self.speech_task.start()
         print("Speech task started")
 
+
     def _get_voice_state_change_type(self, before: VoiceState, after: VoiceState):
         stateType = None
         if before.channel:
@@ -56,10 +57,12 @@ class TTSBot(commands.Cog):
         else:
             return None
         
+
     def _member_join(self, member: Member, voice_client: VoiceClient):
         text = f"{member.display_name} has joined the chat."
         self.priority_queue.append({"text": text, "vc": voice_client})
         
+
     async def _member_leave(self, member: Member, bot: commands.Bot, voice_client: VoiceClient, voice_state: VoiceState):
         text = f"{member.display_name} has left the chat."
         self.priority_queue.append({"text": text, "vc": voice_client})
@@ -96,6 +99,7 @@ class TTSBot(commands.Cog):
         else:
             return
 
+
     @commands.command()
     async def join(self, ctx, *, channel: nextcord.VoiceChannel):
         """Joins a voice channel"""
@@ -104,6 +108,7 @@ class TTSBot(commands.Cog):
             return await ctx.voice_client.move_to(channel)
 
         await channel.connect()
+
 
     @commands.command()
     async def say(self, ctx: commands.Context, *, message):
@@ -114,10 +119,12 @@ class TTSBot(commands.Cog):
 
         # self.queue.append(f"{ctx.author.display_name} says: {query}")
 
+
     # TODO: needs to connect to channel just like say
     @commands.command()
     async def ssay(self, ctx: commands.Context, *, message):
         self.queue.append({"text": message, "context": ctx})
+
 
     @commands.command()
     async def volume(self, ctx, volume: int):
@@ -129,12 +136,14 @@ class TTSBot(commands.Cog):
         ctx.voice_client.source.volume = volume / 100
         await ctx.send(f"Changed volume to {volume}%")
 
+
     @commands.command(aliases=["leave", "fuckoff"])
     async def stop(self, ctx: commands.Context):
         """Stops and disconnects the bot from voice"""
 
         await ctx.voice_client.disconnect()
     
+
     @say.before_invoke
     @ssay.before_invoke
     async def ensure_voice(self, ctx: commands.Context):
@@ -145,6 +154,7 @@ class TTSBot(commands.Cog):
                 await ctx.send("You are not connected to a voice channel.")
                 raise commands.CommandError("Author not connected to a voice channel.")
     
+
     @commands.command(pass_context=True)
     async def accent(self, ctx: commands.Context, arg: str):
         if arg == "list":
@@ -176,6 +186,7 @@ class TTSBot(commands.Cog):
         if text and voice_client:
             self._speak_text(voice_client, text)
     
+
     def voice_checks(self, ctx: commands.Context):
         if ctx:
             if isinstance(ctx, commands.Context):
@@ -188,22 +199,7 @@ class TTSBot(commands.Cog):
                 if ctx.is_playing():
                     return False
                 return True
-            
-    # @tasks.loop(seconds=5)
-    # async def auto_leave(self):
-    #     for guild in self.bot.guilds:
-    #         for voice_channel in guild.voice_channels:
-    #             if len(voice_channel.members) == 1:
-    #                 member = voice_channel.members[0]
-    #                 if member.id == self.id:
-    #                     return
-    #                 bot = member
-    #                 voice_client: VoiceClient
-    #                 voice_client = nextcord.utils.find(lambda vc: vc.guild.id == bot.guild.id, self.bot.voice_clients)
-    #                 if voice_client.is_connected():
-    #                     await voice_client.disconnect()
-    #                     self.queue.clear()
-                        
+    
     
     def _speak_text(self, voice_client: VoiceClient, text: str):
         if not voice_client.is_connected():

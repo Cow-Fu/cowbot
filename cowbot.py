@@ -13,13 +13,16 @@ intents = nextcord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix=("Moo ", "moo "), intents=intents)
 
+
 @bot.event
 async def on_ready():
     print("connected")
     
+
 @bot.group(pass_context=True)
 async def guess(ctx):
     pass
+
 
 @guess.command()
 async def what(ctx: commands.Context):

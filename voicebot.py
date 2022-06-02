@@ -84,6 +84,7 @@ class TTSBot(commands.Cog):
         try:
             bot = nextcord.utils.find(lambda x: x.id == self.id, channel.members)
         except AttributeError as e:
+            print(e)
             return
         if not bot:
             return

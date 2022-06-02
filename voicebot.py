@@ -80,7 +80,11 @@ class TTSBot(commands.Cog):
             channel = after.channel
         else:
             channel = before.channel
-        bot = nextcord.utils.find(lambda x: x.id == self.id, channel.members)
+        
+        try:
+            bot = nextcord.utils.find(lambda x: x.id == self.id, channel.members)
+        except AttributeError as e:
+            return
         if not bot:
             return
         #each of these are voiceclient instances

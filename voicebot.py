@@ -129,7 +129,7 @@ class TTSBot(commands.Cog):
         """Changes the player's volume"""
 
         if ctx.voice_client is None:
-            return await ctx.send("Not connected to a voice channel.")
+            return await ctx.send("Not connected to a voice channel. You can use \"moo join <channel>\" to connected.")
 
         ctx.voice_client.source.volume = volume / 100
         await ctx.send(f"Changed volume to {volume}%")

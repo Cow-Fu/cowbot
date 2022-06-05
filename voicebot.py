@@ -129,7 +129,7 @@ class TTSBot(commands.Cog):
         """Changes the player's volume"""
 
         if ctx.voice_client is None:
-            return await ctx.send("Not connected to a voice channel. You can use \"moo join <channel>\" to connected.")
+            return await ctx.send("Not connected to a voice channel. ")
 
         ctx.voice_client.source.volume = volume / 100
         await ctx.send(f"Changed volume to {volume}%")
@@ -147,7 +147,7 @@ class TTSBot(commands.Cog):
             if ctx.author.voice:
                 await ctx.author.voice.channel.connect()
             else:
-                await ctx.send("You are not connected to a voice channel.")
+                await ctx.send("You are not connected to a voice channel. You can use \"moo join <channel>\" to connected.")
                 raise commands.CommandError("Author not connected to a voice channel.")
     
     @commands.command(pass_context=True)

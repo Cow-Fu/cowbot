@@ -147,8 +147,8 @@ class TTSBot(commands.Cog):
             if ctx.author.voice:
                 await ctx.author.voice.channel.connect()
             else:
-                await ctx.send("You are not connected to a voice channel. You can use \"moo join <channel>\" to connected.")
-                raise commands.CommandError("Author not connected to a voice channel.")
+                await ctx.send("You are not connected to a voice channel. You can use \"moo join <channel>\" to connect.")
+                # raise commands.CommandError("Author not connected to a voice channel.")
     
     @commands.command(pass_context=True)
     async def accent(self, ctx: commands.Context, arg: str):

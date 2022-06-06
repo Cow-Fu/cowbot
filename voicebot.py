@@ -84,7 +84,10 @@ class TTSBot(commands.Cog):
         try:
             bot = nextcord.utils.find(lambda x: x.id == self.id, channel.members)
         except AttributeError as e:
+            print("Voice state change update error")
             print(e)
+            print(before)
+            print(after)
             return
         if not bot:
             return

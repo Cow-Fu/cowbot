@@ -1,5 +1,8 @@
 
 from collections import deque
+from email.policy import default
+import re
+import traceback
 from discord import Guild, VoiceChannel, VoiceClient
 from dotenv import load_dotenv
 import gtts
@@ -36,26 +39,35 @@ class TTSBot(commands.Cog):
         print("Speech task started")
 
     def _get_voice_state_change_type(self, before: VoiceState, after: VoiceState):
-        stateType = None
-        if before.channel:
-            if before.self_mute:
-                return VoiceStateChangeType.MUTE
-            if before.self_deaf:
-                return VoiceStateChangeType.DEAFEN
-            if after.channel:
-                return VoiceStateChangeType.SWAP
-            if not after.channel:
-                return VoiceStateChangeType.LEAVE
-        if after.channel:
-            # might not need these
+        state_type = None
+        if before.channel and after.channel:
+            if not before.self_mute and after.self_mute:
+                state_type = VoiceStateChangeType.MUTE
+            elif before.self_mute and not after.self_mute:
+                state_type = VoiceStateChangeType.UNMUTE
+            elif not before.self_deaf and after.self_deaf:
+                state_type = VoiceStateChangeType.DEAFEN
+            elif before.self_deaf and not after.self_deaf:
+                state_type = VoiceStateChangeType.UNDEAFEN
+            if not before.channel == after.channel:
+                state_type = VoiceStateChangeType.SWAP
+        elif after.channel and not before.channel:
             if after.self_mute:
-                return VoiceStateChangeType.MUTE
-            if after.self_deaf:
-                return VoiceStateChangeType.DEAFEN
-            return VoiceStateChangeType.JOIN
-        else:
-            return None
-        
+                state_type = VoiceStateChangeType.JOIN_MUTED
+            elif after.self_deaf:
+                state_type = VoiceStateChangeType.JOIN_DEAFENED
+            else:
+                state_type = VoiceStateChangeType.JOIN
+        elif before.channel and not after.channel:
+            if before.self_mute:
+                state_type = VoiceStateChangeType.LEAVE_MUTED
+            elif before.self_deaf:
+                state_type = VoiceStateChangeType.LEAVE_DEAFENED
+            else:
+                state_type = VoiceStateChangeType.LEAVE
+    
+        return state_type
+
     def _member_join(self, member: Member, voice_client: VoiceClient):
         text = f"{member.display_name} has joined the chat."
         self.priority_queue.append({"text": text, "vc": voice_client})
@@ -68,6 +80,17 @@ class TTSBot(commands.Cog):
             if voice_state.channel.members[0].id == self.id:
                 await voice_client.disconnect()
                 
+    
+    def _get_channel_from_state_change(self, before: VoiceState, after: VoiceState, voice_state_change: VoiceStateChangeType):
+        channel = None
+        if voice_state_change in [VoiceStateChangeType.JOIN, 
+                                  VoiceStateChangeType.JOIN_MUTED, 
+                                  VoiceStateChangeType.JOIN_DEAFENED]:
+            channel = after.channel
+        else:
+            channel = before.channel
+        return channel
+            
                 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
@@ -76,18 +99,11 @@ class TTSBot(commands.Cog):
         if not voice_state_change:
             return
             
-        if voice_state_change == VoiceStateChangeType.JOIN:
-            channel = after.channel
-        else:
-            channel = before.channel
+        channel = self._get_channel_from_state_change(before, after, voice_state_change)
         
         try:
             bot = nextcord.utils.find(lambda x: x.id == self.id, channel.members)
         except AttributeError as e:
-            print("Voice state change update error")
-            print(e)
-            print(before)
-            print(after)
             return
         if not bot:
             return
@@ -97,9 +113,13 @@ class TTSBot(commands.Cog):
         if not voice_client:
             return
 
-        if voice_state_change == VoiceStateChangeType.JOIN:
+        if voice_state_change == VoiceStateChangeType.JOIN or \
+            voice_state_change == VoiceStateChangeType.JOIN_MUTED or \
+                voice_state_change == VoiceStateChangeType.JOIN_DEAFENED:
             self._member_join(member, voice_client)
-        elif voice_state_change == VoiceStateChangeType.LEAVE:
+        elif voice_state_change == VoiceStateChangeType.LEAVE or \
+            voice_state_change == VoiceStateChangeType.LEAVE_MUTED or \
+                voice_state_change == VoiceStateChangeType.LEAVE_DEAFENED:
             await self._member_leave(member, bot, voice_client, before)
         else:
             return
@@ -197,21 +217,6 @@ class TTSBot(commands.Cog):
                     return False
                 return True
             
-    # @tasks.loop(seconds=5)
-    # async def auto_leave(self):
-    #     for guild in self.bot.guilds:
-    #         for voice_channel in guild.voice_channels:
-    #             if len(voice_channel.members) == 1:
-    #                 member = voice_channel.members[0]
-    #                 if member.id == self.id:
-    #                     return
-    #                 bot = member
-    #                 voice_client: VoiceClient
-    #                 voice_client = nextcord.utils.find(lambda vc: vc.guild.id == bot.guild.id, self.bot.voice_clients)
-    #                 if voice_client.is_connected():
-    #                     await voice_client.disconnect()
-    #                     self.queue.clear()
-                        
     
     def _speak_text(self, voice_client: VoiceClient, text: str):
         if not voice_client.is_connected():

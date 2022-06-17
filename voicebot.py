@@ -20,6 +20,7 @@ class TTSBot(commands.Cog):
         self.path = os.getenv("MP3_PATH")
         self.queue = deque()
         self.priority_queue = deque()
+        self.auto_chatters = []
     
         self.accents = {
             "US": "com",
@@ -185,7 +186,38 @@ class TTSBot(commands.Cog):
             await ctx.reply("Accent updated.")
             return
         await ctx.reply("Not a valid accent code.")
-            
+    
+    @commands.group(pass_context=True)
+    async def autospeak(self, ctx):
+        pass
+    
+    @autospeak.command(pass_context=True)
+    async def on(self, ctx: commands.Context):
+        if ctx.author in self.auto_chatters:
+            await ctx.reply("You already have auto chat enabled!")
+            return
+        
+        self.auto_chatters.append(ctx.author)
+        await ctx.reply("Auto chat has been enabled for you.")
+
+    @autospeak.command(pass_context=True)
+    async def off(self, ctx: commands.Context):
+        if not ctx.author in self.auto_chatters:
+            await ctx.reply("You already have auto chat disabled!")
+            return
+        
+        self.auto_chatters.remove(ctx.author)
+        await ctx.reply("Auto chat has been disabled for you.")
+
+    @commands.Cog.listener()
+    async def on_message(self, message: nextcord.Message):
+        if message.channel.id == 931798323021631548: # hard code bad
+          if not message.content.lower().startswith("moo"):
+              if message.author in self.auto_chatters:
+                ctx = await self.bot.get_context(message)
+                self.queue.append({"text": message.content, "context": ctx})
+        # await self.bot.process_commands(message)
+                  
 
     @tasks.loop(seconds=1.5)
     async def speech_task(self):

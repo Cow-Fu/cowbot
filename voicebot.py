@@ -172,7 +172,8 @@ class TTSBot(commands.Cog):
                 await ctx.author.voice.channel.connect()
             else:
                 await ctx.send("You are not connected to a voice channel. You can use \"moo join <channel>\" to connect.")
-                # raise commands.CommandError("Author not connected to a voice channel.")
+                return False
+        return True
     
     @commands.command(pass_context=True)
     async def accent(self, ctx: commands.Context, arg: str):
@@ -215,7 +216,8 @@ class TTSBot(commands.Cog):
           if not message.content.lower().startswith("moo"):
               if message.author in self.auto_chatters:
                 ctx = await self.bot.get_context(message)
-                self.queue.append({"text": message.content, "context": ctx})
+                if self.ensure_voice(ctx):
+                    self.queue.append({"text": message.content, "context": ctx})
         # await self.bot.process_commands(message)
                   
 

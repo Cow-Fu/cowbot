@@ -213,7 +213,7 @@ class TTSBot(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: nextcord.Message):
         if message.channel.id == 931798323021631548: # hard code bad
-          if not message.content.lower().startswith("moo"):
+          if not message.content.lower().startswith("moo "):
               if message.author in self.auto_chatters:
                 ctx = await self.bot.get_context(message)
                 if self.ensure_voice(ctx):

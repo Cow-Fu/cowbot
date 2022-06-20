@@ -23,6 +23,7 @@ class TTSBot(commands.Cog):
         self.priority_queue = deque()
         self.auto_chatters = []   
         self.accent_manager = TTSAccents()
+        self.last_speaker = None
         
 
     @commands.Cog.listener()
@@ -129,7 +130,7 @@ class TTSBot(commands.Cog):
     async def say(self, ctx: commands.Context, *, message):
         """Plays a file from the local filesystem"""
         
-        text = f"{ctx.author.display_name} says {message}"
+        text = self._smart_name_announce(message) 
         self.queue.append({"text": text, "context": ctx})
 
         # self.queue.append(f"{ctx.author.display_name} says: {query}")
@@ -201,6 +202,13 @@ class TTSBot(commands.Cog):
         self.auto_chatters.remove(ctx.author)
         await ctx.reply("Auto chat has been disabled for you.")
 
+    def _smart_name_announce(self, message: nextcord.Message):
+        if not message.author == self.last_speaker:
+            self.last_speaker = message.author
+            return f"{message.author.display_name} says {message.content}"
+        
+        return message.content 
+    
     @commands.Cog.listener()
     async def on_message(self, message: nextcord.Message):
         if message.channel.id == 931798323021631548: # hard code bad
@@ -208,7 +216,8 @@ class TTSBot(commands.Cog):
               if message.author in self.auto_chatters:
                 ctx = await self.bot.get_context(message)
                 if self.ensure_voice(ctx):
-                    self.queue.append({"text": message.content, "context": ctx})
+                    text = self._smart_name_announce(message)                
+                    self.queue.append({"text": text, "context": ctx})
         # await self.bot.process_commands(message)
                   
 

@@ -11,6 +11,7 @@ from nextcord import VoiceState, Member
 from nextcord.ext import commands, tasks
 from VoiceStateChangeType import VoiceStateChangeType
 import os
+from TTSAccents import TTSAccents
 
 
 class TTSBot(commands.Cog):
@@ -20,19 +21,9 @@ class TTSBot(commands.Cog):
         self.path = os.getenv("MP3_PATH")
         self.queue = deque()
         self.priority_queue = deque()
-        self.auto_chatters = []
-    
-        self.accents = {
-            "US": "com",
-            "AU": "com.au",
-            "UK": "co.uk",
-            "CA": "ca",
-            "IN": "co.in",
-            "IE": "ie",
-            "SA": "co.za"
-        }
+        self.auto_chatters = []   
+        self.accent_manager = TTSAccents()
         
-        self.currentAccent = self.accents["US"]
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -182,8 +173,8 @@ class TTSBot(commands.Cog):
                             "United States: US\nCanada: CA\n" +
                             "India: IN\nIreland: IE\nSouth Africa: SA")
             return
-        if arg.upper() in self.accents:
-            self.currentAccent = self.accents[arg.upper()]
+        if arg.upper() in self.accent_manager.accents :
+            self.accent_manager.current_accent = self.accent_manager.accents[arg.upper()]
             await ctx.reply("Accent updated.")
             return
         await ctx.reply("Not a valid accent code.")
@@ -255,7 +246,7 @@ class TTSBot(commands.Cog):
     def _speak_text(self, voice_client: VoiceClient, text: str):
         if not voice_client.is_connected():
             return
-        tts = gtts.gTTS(text, lang="en", tld=self.currentAccent)
+        tts = gtts.gTTS(text, lang="en", tld=self.accent_manager.current_accent)
         try:
             tts.save(self.path)
         except AssertionError as e:

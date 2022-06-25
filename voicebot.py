@@ -215,7 +215,7 @@ class TTSBot(commands.Cog):
           if not message.content.lower().startswith("moo "):
               if message.author in self.auto_chatters:
                 ctx = await self.bot.get_context(message)
-                if self.ensure_voice(ctx):
+                if await self.ensure_voice(ctx):
                     text = self._smart_name_announce(message)                
                     self.queue.append({"text": text, "context": ctx})
         # await self.bot.process_commands(message)

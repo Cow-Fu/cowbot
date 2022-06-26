@@ -130,7 +130,7 @@ class TTSBot(commands.Cog):
     async def say(self, ctx: commands.Context, *, message):
         """Plays a file from the local filesystem"""
         
-        text = self._smart_name_announce(message) 
+        text = self._smart_name_announce(message, ctx.author)
         self.queue.append({"text": text, "context": ctx})
 
         # self.queue.append(f"{ctx.author.display_name} says: {query}")
@@ -202,7 +202,7 @@ class TTSBot(commands.Cog):
         self.auto_chatters.remove(ctx.author)
         await ctx.reply("Auto chat has been disabled for you.")
 
-    def _smart_name_announce(self, message: nextcord.Message):
+    def _smart_name_announce(self, message: str, author):
         if not message.author == self.last_speaker:
             self.last_speaker = message.author
             return f"{message.author.display_name} says {message.content}"
@@ -215,9 +215,9 @@ class TTSBot(commands.Cog):
           if not message.content.lower().startswith("moo "):
               if message.author in self.auto_chatters:
                 ctx = await self.bot.get_context(message)
-                if self.ensure_voice(ctx):
-                    text = self._smart_name_announce(message)                
-                    self.queue.append({"text": text, "context": ctx})
+                if await self.ensure_voice(ctx):
+                    text = self._smart_name_announce(message.content, message.author)                
+                self.queue.append({"text": text, "context": ctx})
         # await self.bot.process_commands(message)
                   
 
@@ -236,6 +236,7 @@ class TTSBot(commands.Cog):
                 text = item["text"]
                 voice_client = item["context"].voice_client
         if text and voice_client:
+            print(text)
             self._speak_text(voice_client, text)
     
     def voice_checks(self, ctx: commands.Context):

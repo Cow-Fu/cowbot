@@ -203,11 +203,11 @@ class TTSBot(commands.Cog):
         await ctx.reply("Auto chat has been disabled for you.")
 
     def _smart_name_announce(self, message: str, author):
-        if not message.author == self.last_speaker:
-            self.last_speaker = message.author
-            return f"{message.author.display_name} says {message.content}"
+        if not author == self.last_speaker:
+            self.last_speaker = author
+            return f"{author.display_name} says {message}"
         
-        return message.content 
+        return message 
     
     @commands.Cog.listener()
     async def on_message(self, message: nextcord.Message):

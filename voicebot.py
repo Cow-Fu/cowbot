@@ -12,6 +12,7 @@ from nextcord.ext import commands, tasks
 from VoiceStateChangeType import VoiceStateChangeType
 import os
 from TTSAccents import TTSAccents
+from SpeechSanitizer import SpeechSanitizer
 
 
 class TTSBot(commands.Cog):
@@ -24,6 +25,7 @@ class TTSBot(commands.Cog):
         self.auto_chatters = []   
         self.accent_manager = TTSAccents()
         self.last_speaker = None
+        self.speech_sanitizer = SpeechSanitizer(self.bot)
         
 
     @commands.Cog.listener()
@@ -198,11 +200,10 @@ class TTSBot(commands.Cog):
         if not ctx.author in self.auto_chatters:
             await ctx.reply("You already have auto chat disabled!")
             return
-        
         self.auto_chatters.remove(ctx.author)
         await ctx.reply("Auto chat has been disabled for you.")
 
-    def _smart_name_announce(self, message: str, author: nextcord.Member):
+    def _smart_name_announce(self, message: str, author):
         if not author == self.last_speaker:
             self.last_speaker = author
             return f"{author.display_name} says {message}"
@@ -217,7 +218,8 @@ class TTSBot(commands.Cog):
                 ctx = await self.bot.get_context(message)
                 if await self.ensure_voice(ctx):
                     text = self._smart_name_announce(message.content, message.author)                
-                    self.queue.append({"text": text, "context": ctx})
+                self.queue.append({"text": text, "context": ctx})
+
         # await self.bot.process_commands(message)
                   
 
@@ -233,7 +235,7 @@ class TTSBot(commands.Cog):
         elif self.queue:
             if self.voice_checks(self.queue[0]["context"]):
                 item = self.queue.popleft()
-                text = item["text"]
+                text = await self.speech_sanitizer.sanitize(item["text"], item["context"])
                 voice_client = item["context"].voice_client
         if text and voice_client:
             print(text)

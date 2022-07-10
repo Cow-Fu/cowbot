@@ -76,12 +76,14 @@ class TTSBot(commands.Cog):
     
     def _get_channel_from_state_change(self, before: VoiceState, after: VoiceState, voice_state_change: VoiceStateChangeType):
         channel = None
-        if voice_state_change in [VoiceStateChangeType.JOIN, 
-                                  VoiceStateChangeType.JOIN_MUTED, 
-                                  VoiceStateChangeType.JOIN_DEAFENED]:
-            channel = after.channel
-        else:
-            channel = before.channel
+        match voice_state_change:
+            case VoiceStateChangeType.JOIN | \
+                 VoiceStateChangeType.JOIN_MUTED | \
+                 VoiceStateChangeType.JOIN_DEAFENED:
+                channel = after.channel
+            case _:
+                channel = before.channel
+                
         return channel
             
                 
@@ -106,16 +108,16 @@ class TTSBot(commands.Cog):
         if not voice_client:
             return
 
-        if voice_state_change == VoiceStateChangeType.JOIN or \
-            voice_state_change == VoiceStateChangeType.JOIN_MUTED or \
-                voice_state_change == VoiceStateChangeType.JOIN_DEAFENED:
-            self._member_join(member, voice_client)
-        elif voice_state_change == VoiceStateChangeType.LEAVE or \
-            voice_state_change == VoiceStateChangeType.LEAVE_MUTED or \
-                voice_state_change == VoiceStateChangeType.LEAVE_DEAFENED:
-            await self._member_leave(member, bot, voice_client, before)
-        else:
-            return
+        match voice_state_change:
+            case VoiceStateChangeType.JOIN | \
+                    VoiceStateChangeType.JOIN_MUTED | \
+                    VoiceStateChangeType.JOIN_DEAFENED:
+                self._member_join(member, voice_client)
+            case VoiceStateChangeType.LEAVE | \
+                    VoiceStateChangeType.LEAVE_MUTED | \
+                    VoiceStateChangeType.LEAVE_DEAFENED:
+                self._member_leave(member, bot, voice_client, before)
+                
 
     @commands.command()
     async def join(self, ctx, *, channel: nextcord.VoiceChannel):

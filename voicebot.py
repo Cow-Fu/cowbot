@@ -1,8 +1,6 @@
 
 from collections import deque
-from email.policy import default
 import re
-import traceback
 from discord import Guild, VoiceChannel, VoiceClient
 from dotenv import load_dotenv
 import gtts

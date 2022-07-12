@@ -1,5 +1,7 @@
 
 from collections import deque
+from multiprocessing.dummy import active_children
+from operator import truediv
 import re
 from discord import Guild, VoiceChannel, VoiceClient
 from dotenv import load_dotenv
@@ -165,6 +167,14 @@ class TTSBot(commands.Cog):
             if ctx.author.voice:
                 await ctx.author.voice.channel.connect()
             else:
+                active_channels = []
+                for channel in ctx.guild.voice_channels:
+                    if len(channel.members) > 0:
+                        active_channels.append(channel)
+                if len(active_channels) == 1:
+                    c = active_channels[0]
+                    c.connect()
+                    return True
                 await ctx.send("You are not connected to a voice channel. You can use \"moo join <channel>\" to connect.")
                 return False
         return True

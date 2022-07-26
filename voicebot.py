@@ -14,16 +14,18 @@ import os
 from TTSAccents import TTSAccents
 from SpeechSanitizer import SpeechSanitizer
 
-
+# TODO have different class handle speech synthesis
 class TTSBot(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.id = 542480024779882496
         self.path = os.getenv("MP3_PATH")
+        # TODO make these into SpeechQueue class
         self.queue = deque()
         self.priority_queue = deque()
-        self.auto_chatters = []   
-        self.accent_manager = TTSAccents()
+        self.auto_chatters = []
+        # TODO move more accent functionallity to this (list, etc)
+        self.accent_manager = TTSAccents()                  
         self.last_speaker = None
         self.speech_sanitizer = SpeechSanitizer(self.bot)
         
@@ -173,7 +175,7 @@ class TTSBot(commands.Cog):
                         active_channels.append(channel)
                 if len(active_channels) == 1:
                     c = active_channels[0]
-                    c.connect()
+                    await c.connect()
                     return True
                 await ctx.send("You are not connected to a voice channel. You can use \"moo join <channel>\" to connect.")
                 return False

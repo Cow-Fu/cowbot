@@ -120,7 +120,7 @@ class TTSBot(commands.Cog):
             case VoiceStateChangeType.LEAVE | \
                     VoiceStateChangeType.LEAVE_MUTED | \
                     VoiceStateChangeType.LEAVE_DEAFENED:
-                self._member_leave(member, bot, voice_client, before)
+                await self._member_leave(member, bot, voice_client, before)
                 
 
     @commands.command()

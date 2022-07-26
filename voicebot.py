@@ -173,6 +173,7 @@ class TTSBot(commands.Cog):
                 for channel in ctx.guild.voice_channels:
                     if len(channel.members) > 0:
                         active_channels.append(channel)
+                print(active_channels)
                 if len(active_channels) == 1:
                     c = active_channels[0]
                     await c.connect()

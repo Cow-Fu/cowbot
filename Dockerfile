@@ -16,10 +16,7 @@ RUN apk add --update --no-cache fish \
 	make \
 	curl
 
-# install neovim
-# RUN wget 'https://github.com/neovim/neovim/releases/download/stable/nvim-linux64.deb'
-# RUN apt install ./nvim-linux64.deb
-
+# configure neovim
 WORKDIR /root/.config
 RUN git clone "https://github.com/Cow-Fu/kickstart.nvim.git"
 RUN mv kickstart.nvim nvim
@@ -35,3 +32,4 @@ COPY ./requirements.txt /usr/src/requirements/
 RUN pip3 install -r /usr/src/requirements/requirements.txt -U
 
 WORKDIR /usr/src/app
+CMD ['python3', 'cowbot.py']

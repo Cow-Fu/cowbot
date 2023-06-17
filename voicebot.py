@@ -156,7 +156,7 @@ class TTSBot(commands.Cog):
         ctx.voice_client.source.volume = volume / 100
         await ctx.send(f"Changed volume to {volume}%")
 
-    @commands.command(aliases=["leave", "fuckoff"])
+    @commands.command(aliases=["leave", "fuck off"])
     async def stop(self, ctx: commands.Context):
         """Stops and disconnects the bot from voice"""
 
@@ -225,7 +225,8 @@ class TTSBot(commands.Cog):
     
     @commands.Cog.listener()
     async def on_message(self, message: nextcord.Message):
-        if message.channel.id == 931798323021631548: # hard code bad
+        message
+        if message.channel.id in [931798323021631548, 852807298912485376]: # hard code bad
           if not message.content.lower().startswith("moo "):
               if message.author in self.auto_chatters:
                 ctx = await self.bot.get_context(message)
@@ -272,10 +273,7 @@ class TTSBot(commands.Cog):
         if not voice_client.is_connected():
             return
         tts = gtts.gTTS(text, lang="en", tld=self.accent_manager.current_accent)
-        try:
-            tts.save(self.path)
-        except AssertionError as e:
-            return
+        tts.save(self.path)
         thing = nextcord.PCMVolumeTransformer(nextcord.FFmpegPCMAudio(self.path, options="-vn"))
         voice_client.play(thing)
         

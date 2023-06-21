@@ -12,5 +12,5 @@ class TTSAccents:
             "SA": "co.za"
         }
 
-        self.current_accent = self.accents["US"]
+        self.current_accent = self.accents["AU"]
         

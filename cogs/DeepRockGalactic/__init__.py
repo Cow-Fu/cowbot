@@ -1,4 +1,4 @@
-from cogs.DeepRockGalactic.DeepRockCog import DeepRockCog
+from .DeepRockCog import DeepRockCog
 
 
 def setup(bot):

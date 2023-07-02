@@ -52,7 +52,34 @@ class DeepDiveManager:
         return [normal_dd, elite_dd]
 
 
-class DeepDiveEmbed:
+class DeepDiveDisplayBuilder(ABC):
+    @abstractmethod
+    def build(self, dd: DeepDiveInfo):
+        pass
+
+
+class DeepDiveTextBuilder(DeepDiveDisplayBuilder):
+    def build(self, dd: DeepDiveInfo):
+        header = [dd.type, t2a.Merge.LEFT]
+        body = []
+        body.append(["Code Name", dd.name])
+        body.append(["Biome", dd.biome])
+        for stage in dd.stages:
+            body.append([" ", " "])
+            body.append([f"Stage {stage.id}", t2a.Merge.LEFT])
+            body.append(["Primary", stage.primary])
+            body.append(["Secondary", stage.secondary])
+            body.append(["Anomaly", stage.anomaly])
+            body.append(["Warning", stage.warning])
+
+        return t2a.table2ascii(
+                header=header,
+                body=body,
+                style=t2a.PresetStyle.thin_compact_rounded
+                )
+
+
+class DeepDiveEmbedBuilder(DeepDiveDisplayBuilder):
     def __init__(self):
         self.deepdive = None
         self.stages = []
@@ -79,13 +106,30 @@ class DeepDiveEmbed:
 
 
 class DeepRockCog(commands.Cog):
-    @nextcord.slash_command(name= "rawr", description="gets weekly deep dive information")
-    async def deepdive(self, interaction: nextcord.Interaction):
+    @nextcord.slash_command(name="deepdive", description="gets weekly deep dive information")
+    async def deepdive(self, interaction: nextcord.Interaction, choice: int = nextcord.SlashOption(
+            name="type",
+            description="Select if you want regular or elite deep dive information",
+            choices={"Normal": 0, "Elite": 1, "Both": 2}
+    )):
         normal_dd, elite_dd = await DeepDiveManager().get_info()
-        dde = DeepDiveEmbed()
-        normal_embeds = dde.build(normal_dd)
-        elite_embeds = dde.build(elite_dd)
+        ddb = DeepDiveTextBuilder()
+        info = []
 
-        await interaction.send(embeds=normal_embeds)
-        await interaction.send(embeds=elite_embeds)
+        if choice == 0 or choice == 2:
+            info.append(ddb.build(normal_dd))
+        if choice == 1 or choice == 2:
+            info.append(ddb.build(elite_dd))
+        embeds = []
+        for item in info:
+            embeds.append(nextcord.Embed(description=f"```{item}```"))
+
+        await interaction.send(embeds=embeds)
+        # await interaction.send(embeds=elite_embeds)
+
+
+if __name__ == '__main__':
+    normal_dd, elite_dd = asyncio.run(DeepDiveManager().get_info())
+    print(DeepDiveTextBuilder().build(normal_dd))
+
 

@@ -5,7 +5,8 @@ import json
 from dataclasses import dataclass
 from typing import List, Optional
 import asyncio
-from enum import Enum
+from abc import ABC, abstractmethod
+import table2ascii as t2a
 
 
 @dataclass
@@ -24,10 +25,6 @@ class DeepDiveInfo:
     biome: str
     seed: int
     stages: List[StageInfo]
-
-class DeepDiveType(Enum):
-    DEEP_DIVE = "Deep Dive"
-    ELITE_DEEP_DIVE = "Elite Deep Dive"
 
 
 class DeepDiveManager:

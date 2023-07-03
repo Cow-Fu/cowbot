@@ -125,11 +125,3 @@ class DeepRockCog(commands.Cog):
             embeds.append(nextcord.Embed(description=f"```{item}```"))
 
         await interaction.send(embeds=embeds)
-        # await interaction.send(embeds=elite_embeds)
-
-
-if __name__ == '__main__':
-    normal_dd, elite_dd = asyncio.run(DeepDiveManager().get_info())
-    print(DeepDiveTextBuilder().build(normal_dd))
-
-

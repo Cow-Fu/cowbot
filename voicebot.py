@@ -1,18 +1,15 @@
 
 from collections import deque
-from multiprocessing.dummy import active_children
-from operator import truediv
-import re
-from discord import Guild, VoiceChannel, VoiceClient
 from dotenv import load_dotenv
 import gtts
 import nextcord
-from nextcord import VoiceState, Member
+from nextcord import VoiceState, Member, VoiceClient
 from nextcord.ext import commands, tasks
 from VoiceStateChangeType import VoiceStateChangeType
 import os
 from TTSAccents import TTSAccents
 from SpeechSanitizer import SpeechSanitizer
+
 
 # TODO have different class handle speech synthesis
 class TTSBot(commands.Cog):
@@ -25,10 +22,9 @@ class TTSBot(commands.Cog):
         self.priority_queue = deque()
         self.auto_chatters = []
         # TODO move more accent functionallity to this (list, etc)
-        self.accent_manager = TTSAccents()                  
+        self.accent_manager = TTSAccents()
         self.last_speaker = None
         self.speech_sanitizer = SpeechSanitizer(self.bot)
-        
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -62,22 +58,19 @@ class TTSBot(commands.Cog):
                 state_type = VoiceStateChangeType.LEAVE_DEAFENED
             else:
                 state_type = VoiceStateChangeType.LEAVE
-    
         return state_type
 
     def _member_join(self, member: Member, voice_client: VoiceClient):
         text = f"{member.display_name} has joined the chat."
         self.priority_queue.append({"text": text, "vc": voice_client})
-        
+
     async def _member_leave(self, member: Member, bot: commands.Bot, voice_client: VoiceClient, voice_state: VoiceState):
         text = f"{member.display_name} has left the chat."
         self.priority_queue.append({"text": text, "vc": voice_client})
-        
         if len(voice_state.channel.members) == 1:
             if voice_state.channel.members[0].id == self.id:
                 await voice_client.disconnect()
-                
-    
+
     def _get_channel_from_state_change(self, before: VoiceState, after: VoiceState, voice_state_change: VoiceStateChangeType):
         channel = None
         match voice_state_change:
@@ -87,26 +80,25 @@ class TTSBot(commands.Cog):
                 channel = after.channel
             case _:
                 channel = before.channel
-                
+
         return channel
-            
-                
+
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
         voice_state_change = self._get_voice_state_change_type(before, after)
         channel = None
         if not voice_state_change:
             return
-            
+
         channel = self._get_channel_from_state_change(before, after, voice_state_change)
-        
+
         try:
             bot = nextcord.utils.find(lambda x: x.id == self.id, channel.members)
-        except AttributeError as e:
+        except AttributeError:
             return
         if not bot:
             return
-        #each of these are voiceclient instances
+        # each of these are voiceclient instances
         voice_client = nextcord.utils.find(lambda vc: vc.guild.id == bot.guild.id, self.bot.voice_clients)
 
         if not voice_client:
@@ -121,7 +113,6 @@ class TTSBot(commands.Cog):
                     VoiceStateChangeType.LEAVE_MUTED | \
                     VoiceStateChangeType.LEAVE_DEAFENED:
                 await self._member_leave(member, bot, voice_client, before)
-                
 
     @commands.command()
     async def join(self, ctx, *, channel: nextcord.VoiceChannel):
@@ -135,7 +126,7 @@ class TTSBot(commands.Cog):
     @commands.command()
     async def say(self, ctx: commands.Context, *, message):
         """Plays a file from the local filesystem"""
-        
+
         text = self._smart_name_announce(message, ctx.author)
         self.queue.append({"text": text, "context": ctx})
 
@@ -161,7 +152,7 @@ class TTSBot(commands.Cog):
         """Stops and disconnects the bot from voice"""
 
         await ctx.voice_client.disconnect()
-    
+
     @say.before_invoke
     @ssay.before_invoke
     async def ensure_voice(self, ctx: commands.Context):
@@ -181,7 +172,7 @@ class TTSBot(commands.Cog):
                 await ctx.send("You are not connected to a voice channel. You can use \"moo join <channel>\" to connect.")
                 return False
         return True
-    
+
     @commands.command(pass_context=True)
     async def accent(self, ctx: commands.Context, arg: str):
         if arg == "list":
@@ -189,28 +180,28 @@ class TTSBot(commands.Cog):
                             "United States: US\nCanada: CA\n" +
                             "India: IN\nIreland: IE\nSouth Africa: SA")
             return
-        if arg.upper() in self.accent_manager.accents :
+        if arg.upper() in self.accent_manager.accents:
             self.accent_manager.current_accent = self.accent_manager.accents[arg.upper()]
             await ctx.reply("Accent updated.")
             return
         await ctx.reply("Not a valid accent code.")
-    
+
     @commands.group(pass_context=True)
     async def autospeak(self, ctx):
         pass
-    
+
     @autospeak.command(pass_context=True)
     async def on(self, ctx: commands.Context):
         if ctx.author in self.auto_chatters:
             await ctx.reply("You already have auto chat enabled!")
             return
-        
+
         self.auto_chatters.append(ctx.author)
         await ctx.reply("Auto chat has been enabled for you.")
 
     @autospeak.command(pass_context=True)
     async def off(self, ctx: commands.Context):
-        if not ctx.author in self.auto_chatters:
+        if not ctx.author not in self.auto_chatters:
             await ctx.reply("You already have auto chat disabled!")
             return
         self.auto_chatters.remove(ctx.author)
@@ -220,12 +211,11 @@ class TTSBot(commands.Cog):
         if not author == self.last_speaker:
             self.last_speaker = author
             return f"{author.display_name} says {message}"
-        
-        return message 
-    
+
+        return message
+
     @commands.Cog.listener()
     async def on_message(self, message: nextcord.Message):
-        message
         if message.channel.id in [931798323021631548, 852807298912485376]: # hard code bad
           if not message.content.lower().startswith("moo "):
               if message.author in self.auto_chatters:
@@ -233,9 +223,7 @@ class TTSBot(commands.Cog):
                 if await self.ensure_voice(ctx):
                     text = self._smart_name_announce(message.content, message.author)                
                 self.queue.append({"text": text, "context": ctx})
-
         # await self.bot.process_commands(message)
-                  
 
     @tasks.loop(seconds=1.5)
     async def speech_task(self):
@@ -254,7 +242,7 @@ class TTSBot(commands.Cog):
         if text and voice_client:
             print(text)
             self._speak_text(voice_client, text)
-    
+
     def voice_checks(self, ctx: commands.Context):
         if ctx:
             if isinstance(ctx, commands.Context):
@@ -267,8 +255,8 @@ class TTSBot(commands.Cog):
                 if ctx.is_playing():
                     return False
                 return True
-            
-    
+
+
     def _speak_text(self, voice_client: VoiceClient, text: str):
         if not voice_client.is_connected():
             return
@@ -276,8 +264,8 @@ class TTSBot(commands.Cog):
         tts.save(self.path)
         thing = nextcord.PCMVolumeTransformer(nextcord.FFmpegPCMAudio(self.path, options="-vn"))
         voice_client.play(thing)
-        
-        
+
+
 if __name__ == "__main__":
     load_dotenv()
     bot = commands.Bot(command_prefix=("Moo ", "moo "))

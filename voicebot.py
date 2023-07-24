@@ -1,4 +1,5 @@
 
+from dataclasses import dataclass
 from collections import deque
 from dotenv import load_dotenv
 import gtts
@@ -11,13 +12,69 @@ from TTSAccents import TTSAccents
 from SpeechSanitizer import SpeechSanitizer
 
 
+# TODO rename
+@dataclass(slots=True)
+class QueueObj:
+    text: str
+    ctx: commands.Context
+
+
+@dataclass(slots=True)
+class PriorityQueueObj:
+    text: str
+    vc: nextcord.VoiceClient
+
+
+class ServerQueue:
+    def __init__(self):
+        self._queue = deque()
+        self._priority_queue = deque()
+        self._last_speaker = None
+
+    @property
+    def queue(self) -> deque[QueueObj]:
+        return self._queue
+
+    @property
+    def priority_queue(self) -> deque[PriorityQueueObj]:
+        return self._priority_queue
+
+    @property
+    def last_speaker(self) -> Member:
+        return self._last_speaker
+
+    @last_speaker.setter
+    def last_speaker(self, member: Member):
+        self._last_speaker = member
+
+    def is_queue_empty(self) -> bool:
+        return self.queue and self.priority_queue
+
+
+class ServerQueueManager:
+    def __init__(self):
+        self._server_queues: dict[int, ServerQueue] = {}
+
+    def _ensure_id_exists(self, id: int):
+        if id not in self._server_queues.keys():
+            self._server_queues[id] = ServerQueue()
+
+    def add_to_queue(self, id: int, queue_obj: QueueObj):
+        self._ensure_id_exists(id)
+        self._server_queues[id].queue.append(queue_obj)
+
+    def add_to_priority_queue(self, id: int, queue_obj: PriorityQueueObj):
+        self._ensure_id_exists(id)
+        self._server_queues[id].priority_queue.append(queue_obj)
+
+
 # TODO have different class handle speech synthesis
 class TTSBot(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.id = 542480024779882496
         self.path = os.getenv("MP3_PATH")
-        # TODO make these into SpeechQueue class
+        self.server_queues: dict[int, ServerQueue] = {}
         self.queue = deque()
         self.priority_queue = deque()
         self.auto_chatters = []
@@ -60,16 +117,30 @@ class TTSBot(commands.Cog):
                 state_type = VoiceStateChangeType.LEAVE
         return state_type
 
+    def _priority_queue_add(self, obj: PriorityQueueObj):
+        id = obj.vc.guild.id
+        if id not in self.server_queues.keys():
+            self.server_queues[id] = ServerQueue()
+        self.server_queues[id].priority_queue.append(obj)
+
+    def _queue_add(self, obj: QueueObj):
+        id = obj.ctx.message.guild.id
+        if id not in self.server_queues.keys():
+            self.server_queues[id] = ServerQueue()
+        self.server_queues[id].queue.append(QueueObj)
+
     def _member_join(self, member: Member, voice_client: VoiceClient):
         text = f"{member.display_name} has joined the chat."
-        self.priority_queue.append({"text": text, "vc": voice_client})
+        self._priority_queue_add(PriorityQueueObj(text=text, vc=voice_client))
+
 
     async def _member_leave(self, member: Member, bot: commands.Bot, voice_client: VoiceClient, voice_state: VoiceState):
-        text = f"{member.display_name} has left the chat."
-        self.priority_queue.append({"text": text, "vc": voice_client})
         if len(voice_state.channel.members) == 1:
             if voice_state.channel.members[0].id == self.id:
                 await voice_client.disconnect()
+                return
+        text = f"{member.display_name} has left the chat."
+        self._priority_queue_add(PriorityQueueObj(text=text, vc=voice_client))
 
     def _get_channel_from_state_change(self, before: VoiceState, after: VoiceState, voice_state_change: VoiceStateChangeType):
         channel = None
@@ -128,14 +199,12 @@ class TTSBot(commands.Cog):
         """Plays a file from the local filesystem"""
 
         text = self._smart_name_announce(message, ctx.author)
-        self.queue.append({"text": text, "context": ctx})
-
-        # self.queue.append(f"{ctx.author.display_name} says: {query}")
+        self._queue_add(QueueObj(text=text, ctx=ctx))
 
     # TODO: needs to connect to channel just like say
     @commands.command()
     async def ssay(self, ctx: commands.Context, *, message):
-        self.queue.append({"text": message, "context": ctx})
+        self._queue_add(QueueObj(text=message, ctx=ctx))
 
     @commands.command()
     async def volume(self, ctx, volume: int):
@@ -217,18 +286,19 @@ class TTSBot(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: nextcord.Message):
         if message.channel.id in [931798323021631548, 852807298912485376]: # hard code bad
-          if not message.content.lower().startswith("moo "):
-              if message.author in self.auto_chatters:
-                ctx = await self.bot.get_context(message)
-                if await self.ensure_voice(ctx):
-                    text = self._smart_name_announce(message.content, message.author)                
-                self.queue.append({"text": text, "context": ctx})
+            if not message.content.lower().startswith("moo "):
+                if message.author in self.auto_chatters:
+                    ctx = await self.bot.get_context(message)
+                    if await self.ensure_voice(ctx):
+                        text = self._smart_name_announce(message.content, message.author)
+                    self._queue_add(QueueObj(text=text, ctx=ctx))
         # await self.bot.process_commands(message)
 
     @tasks.loop(seconds=1.5)
     async def speech_task(self):
         text = None
         voice_client = None
+        for id, server in self.server_queues.items():
         if self.priority_queue:
             if self.voice_checks(self.priority_queue[0]["vc"]):
                 item = self.priority_queue.popleft()

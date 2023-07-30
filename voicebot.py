@@ -310,19 +310,21 @@ class TTSBot(commands.Cog):
         text = None
         voice_client = None
         for id, server in self.server_queues.items():
-        if self.priority_queue:
-            if self.voice_checks(self.priority_queue[0]["vc"]):
-                item = self.priority_queue.popleft()
-                text = item["text"]
-                voice_client = item["vc"]
-        elif self.queue:
-            if self.voice_checks(self.queue[0]["context"]):
-                item = self.queue.popleft()
-                text = await self.speech_sanitizer.sanitize(item["text"], item["context"])
-                voice_client = item["context"].voice_client
-        if text and voice_client:
-            print(text)
-            self._speak_text(voice_client, text)
+            if server.is_queue_empty():
+                break
+            item = server.get_next()
+            if isinstance(item, PriorityQueueObj):
+                if self.voice_checks(item.vc):
+                    text = item.text
+                    voice_client = item.vc
+            elif isinstance(item, QueueObj):
+                if self.voice_checks(item.ctx):
+                    server.pop_next()
+                    text = await self.speech_sanitizer.sanitize(item.text, item.ctx)
+                    voice_client = item.ctx.voice_client
+            if text and voice_client:
+                print(text)
+                self._speak_text(voice_client, text)
 
     def voice_checks(self, ctx: commands.Context):
         if ctx:

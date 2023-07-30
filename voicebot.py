@@ -47,6 +47,16 @@ class ServerQueue:
     def last_speaker(self, member: Member):
         self._last_speaker = member
 
+    def get_next(self) -> Union[QueueObj, PriorityQueueObj]:
+        if not self.is_queue_empty():
+            return self.priority_queue[0] if self.priority_queue else self.queue[0]
+        return None
+
+    def pop_next(self) -> Union[QueueObj, PriorityQueueObj]:
+        if not self.is_queue_empty():
+            return self.priority_queue.popleft() if self.priority_queue else self.queue.popleft()
+        return None
+
     def is_queue_empty(self) -> bool:
         return self.queue and self.priority_queue
 

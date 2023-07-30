@@ -339,13 +339,14 @@ class TTSBot(commands.Cog):
                     return False
                 return True
 
-
-    def _speak_text(self, voice_client: VoiceClient, text: str):
+    async def _speak_text(self, voice_client: VoiceClient, text: str):
         if not voice_client.is_connected():
             return
-        tts = gtts.gTTS(text, lang="en", tld=self.accent_manager.current_accent)
-        tts.save(self.path)
-        thing = nextcord.PCMVolumeTransformer(nextcord.FFmpegPCMAudio(self.path, options="-vn"))
+        path = f"/dev/shm/{voice_client.guild.id}.mp3"
+        accent = self.accent_manager.current_accent
+        tts = await asyncio.get_event_loop().run_in_executor(None, lambda: gtts.gTTS(text, lang="en", tld=accent))
+        tts.save(path)
+        thing = nextcord.PCMVolumeTransformer(nextcord.FFmpegPCMAudio(path, options="-vn"))
         voice_client.play(thing)
 
 

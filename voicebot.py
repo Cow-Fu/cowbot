@@ -13,6 +13,7 @@ from SpeechSanitizer import SpeechSanitizer
 from typing import Union
 import asyncio
 
+
 # TODO rename
 @dataclass(slots=True)
 class QueueObj:
@@ -59,7 +60,7 @@ class ServerQueue:
         return None
 
     def is_queue_empty(self) -> bool:
-        return self.queue and self.priority_queue
+        return not self.queue and not self.priority_queue
 
 
 class ServerQueueManager:
@@ -78,6 +79,9 @@ class ServerQueueManager:
         self._ensure_id_exists(id)
         self._server_queues[id].priority_queue.append(queue_obj)
 
+    def get_queues(self):
+        return self._server_queues
+
 
 # TODO have different class handle speech synthesis
 class TTSBot(commands.Cog):
@@ -85,7 +89,7 @@ class TTSBot(commands.Cog):
         self.bot = bot
         self.id = 542480024779882496
         self.path = os.getenv("MP3_PATH")
-        self.server_queues: dict[int, ServerQueue] = {}
+        self.server_queues = ServerQueueManager()
         self.queue = deque()
         self.priority_queue = deque()
         self.auto_chatters = []
@@ -130,20 +134,15 @@ class TTSBot(commands.Cog):
 
     def _priority_queue_add(self, obj: PriorityQueueObj):
         id = obj.vc.guild.id
-        if id not in self.server_queues.keys():
-            self.server_queues[id] = ServerQueue()
-        self.server_queues[id].priority_queue.append(obj)
+        self.server_queues.add_to_priority_queue(id, obj)
 
     def _queue_add(self, obj: QueueObj):
         id = obj.ctx.message.guild.id
-        if id not in self.server_queues.keys():
-            self.server_queues[id] = ServerQueue()
-        self.server_queues[id].queue.append(QueueObj)
+        self.server_queues.add_to_queue(id, obj)
 
     def _member_join(self, member: Member, voice_client: VoiceClient):
         text = f"{member.display_name} has joined the chat."
-        self._priority_queue_add(PriorityQueueObj(text=text, vc=voice_client))
-
+        self.server_queues.add_to_priority_queue(voice_client.guild.id, PriorityQueueObj(text=text, vc=voice_client))
 
     async def _member_leave(self, member: Member, bot: commands.Bot, voice_client: VoiceClient, voice_state: VoiceState):
         if len(voice_state.channel.members) == 1:
@@ -151,7 +150,7 @@ class TTSBot(commands.Cog):
                 await voice_client.disconnect()
                 return
         text = f"{member.display_name} has left the chat."
-        self._priority_queue_add(PriorityQueueObj(text=text, vc=voice_client))
+        self.server_queues.add_to_priority_queue(voice_client.guild.id, PriorityQueueObj(text=text, vc=voice_client))
 
     def _get_channel_from_state_change(self, before: VoiceState, after: VoiceState, voice_state_change: VoiceStateChangeType):
         channel = None
@@ -302,29 +301,35 @@ class TTSBot(commands.Cog):
                     ctx = await self.bot.get_context(message)
                     if await self.ensure_voice(ctx):
                         text = self._smart_name_announce(message.content, message.author)
-                    self._queue_add(QueueObj(text=text, ctx=ctx))
+                    self.server_queues.add_to_queue(ctx.guild.id, QueueObj(text=text, ctx=ctx))
         # await self.bot.process_commands(message)
 
     @tasks.loop(seconds=1.5)
     async def speech_task(self):
         text = None
         voice_client = None
-        for id, server in self.server_queues.items():
+        for id, server in self.server_queues.get_queues().items():
             if server.is_queue_empty():
                 break
             item = server.get_next()
+            print(item)
             if isinstance(item, PriorityQueueObj):
-                if self.voice_checks(item.vc):
-                    text = item.text
-                    voice_client = item.vc
+                if not self.voice_checks(item.vc):
+                    if not await self.ensure_voice(item.vc):
+                        return
+                server.pop_next()
+                text = item.text
+                voice_client = item.vc
             elif isinstance(item, QueueObj):
-                if self.voice_checks(item.ctx):
-                    server.pop_next()
-                    text = await self.speech_sanitizer.sanitize(item.text, item.ctx)
-                    voice_client = item.ctx.voice_client
+                if not self.voice_checks(item.ctx):
+                    if not await self.ensure_voice(item.ctx):
+                        return
+                server.pop_next()
+                text = await self.speech_sanitizer.sanitize(item.text, item.ctx)
+                voice_client = item.ctx.voice_client
             if text and voice_client:
                 print(text)
-                self._speak_text(voice_client, text)
+                await self._speak_text(voice_client, text)
 
     def voice_checks(self, ctx: commands.Context):
         if ctx:

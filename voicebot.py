@@ -209,12 +209,12 @@ class TTSBot(commands.Cog):
         """Plays a file from the local filesystem"""
 
         text = self._smart_name_announce(message, ctx.author)
-        self._queue_add(QueueObj(text=text, ctx=ctx))
+        self.server_queues.add_to_queue(ctx.guild.id, QueueObj(text=text, ctx=ctx))
 
     # TODO: needs to connect to channel just like say
     @commands.command()
     async def ssay(self, ctx: commands.Context, *, message):
-        self._queue_add(QueueObj(text=message, ctx=ctx))
+        self.server_queues.add_to_queue(ctx.guild.id, QueueObj(text=message, ctx=ctx))
 
     @commands.command()
     async def volume(self, ctx, volume: int):
@@ -304,48 +304,50 @@ class TTSBot(commands.Cog):
                     self.server_queues.add_to_queue(ctx.guild.id, QueueObj(text=text, ctx=ctx))
         # await self.bot.process_commands(message)
 
-    @tasks.loop(seconds=1.5)
+    @tasks.loop(seconds=1)
     async def speech_task(self):
         text = None
         voice_client = None
         for id, server in self.server_queues.get_queues().items():
             if server.is_queue_empty():
-                break
+                # print("this bitch EmPtY")
+                continue
             item = server.get_next()
             print(item)
             if isinstance(item, PriorityQueueObj):
-                if not self.voice_checks(item.vc):
-                    if not await self.ensure_voice(item.vc):
-                        return
-                server.pop_next()
-                text = item.text
-                voice_client = item.vc
+                if self.voice_checks(item.vc):
+                    server.pop_next()
+                    text = item.text
+                    voice_client = item.vc
             elif isinstance(item, QueueObj):
-                if not self.voice_checks(item.ctx):
-                    if not await self.ensure_voice(item.ctx):
-                        return
-                server.pop_next()
-                text = await self.speech_sanitizer.sanitize(item.text, item.ctx)
-                voice_client = item.ctx.voice_client
+                if self.voice_checks(item.ctx):
+                    server.pop_next()
+                    text = await self.speech_sanitizer.sanitize(item.text, item.ctx)
+                    voice_client = item.ctx.voice_client
             if text and voice_client:
                 print(text)
+                # await asyncio.sleep(.2)  # hack because it needs time to connect for the first message
                 await self._speak_text(voice_client, text)
 
-    def voice_checks(self, ctx: commands.Context):
-        if ctx:
-            if isinstance(ctx, commands.Context):
-                if not ctx.voice_client:
+    def voice_checks(self, ctx_or_vc: Union[commands.Context, VoiceClient]):
+        if ctx_or_vc:
+            if isinstance(ctx_or_vc, commands.Context):
+                if not ctx_or_vc.voice_client:
                     return False
-                if ctx.voice_client.is_playing():
+                if ctx_or_vc.voice_client.is_playing():
                     return False
                 return True
-            if isinstance(ctx, VoiceClient):
-                if ctx.is_playing():
+            if isinstance(ctx_or_vc, VoiceClient):
+                if not ctx_or_vc.is_connected():
+                    return False
+                if ctx_or_vc.is_playing():
                     return False
                 return True
 
     async def _speak_text(self, voice_client: VoiceClient, text: str):
         if not voice_client.is_connected():
+            # todo, initial join message is ending up here
+            print("not connected")
             return
         path = f"/dev/shm/{voice_client.guild.id}.mp3"
         accent = self.accent_manager.current_accent

@@ -234,16 +234,12 @@ class TTSBot(commands.Cog):
 
     @say.before_invoke
     @ssay.before_invoke
-    async def ensure_voice(self, ctx: commands.Context):
+    async def ensure_voice(self, ctx: Union[commands.Context, VoiceClient]):
         if ctx.voice_client is None:
-            if ctx.author.voice:
-                await ctx.author.voice.channel.connect()
+            if voice := ctx.author.voice:
+                await voice.channel.connect()
             else:
-                active_channels = []
-                for channel in ctx.guild.voice_channels:
-                    if len(channel.members) > 0:
-                        active_channels.append(channel)
-                print(active_channels)
+                active_channels = filter(lambda c: c.members > 0, ctx.guild.voice_channels)
                 if len(active_channels) == 1:
                     c = active_channels[0]
                     await c.connect()

@@ -8,7 +8,7 @@ from nextcord import VoiceState, Member, VoiceClient
 from nextcord.ext import commands, tasks
 from VoiceStateChangeType import VoiceStateChangeType
 import os
-from TTSAccents import TTSAccents
+from TTSAccents import TTSAccents, AccentEnum
 from SpeechSanitizer import SpeechSanitizer
 from typing import Union
 import asyncio
@@ -251,14 +251,15 @@ class TTSBot(commands.Cog):
     @commands.command(pass_context=True)
     async def accent(self, ctx: commands.Context, arg: str):
         if arg == "list":
-            await ctx.reply("Australia: AU\nUnited Kingdom: UK\n" +
-                            "United States: US\nCanada: CA\n" +
-                            "India: IN\nIreland: IE\nSouth Africa: SA")
+            msg = "\n".join(map(lambda x: f"{x.long_name}: {x.short_name}", AccentEnum))
+            await ctx.reply(msg)
             return
-        if arg.upper() in self.accent_manager.accents:
-            self.accent_manager.current_accent = self.accent_manager.accents[arg.upper()]
-            await ctx.reply("Accent updated.")
-            return
+        arg = arg.upper()
+        for accent in AccentEnum:
+            if accent.short_name == arg:
+                self.accent_manager.current_accent = accent
+                await ctx.reply("Accent updated.")
+                return
         await ctx.reply("Not a valid accent code.")
 
     @commands.group(pass_context=True)
@@ -346,7 +347,7 @@ class TTSBot(commands.Cog):
             print("not connected")
             return
         path = f"/dev/shm/{voice_client.guild.id}.mp3"
-        accent = self.accent_manager.current_accent
+        accent = self.accent_manager.current_accent.lang_code
         tts = await asyncio.get_event_loop().run_in_executor(None, lambda: gtts.gTTS(text, lang="en", tld=accent))
         tts.save(path)
         thing = nextcord.PCMVolumeTransformer(nextcord.FFmpegPCMAudio(path, options="-vn"))

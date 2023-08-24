@@ -211,7 +211,6 @@ class TTSBot(commands.Cog):
         text = self._smart_name_announce(message, ctx.author)
         self.server_queues.add_to_queue(ctx.guild.id, QueueObj(text=text, ctx=ctx))
 
-    # TODO: needs to connect to channel just like say
     @commands.command()
     async def ssay(self, ctx: commands.Context, *, message):
         self.server_queues.add_to_queue(ctx.guild.id, QueueObj(text=message, ctx=ctx))
@@ -299,7 +298,6 @@ class TTSBot(commands.Cog):
                     if await self.ensure_voice(ctx):
                         text = self._smart_name_announce(message.content, message.author)
                     self.server_queues.add_to_queue(ctx.guild.id, QueueObj(text=text, ctx=ctx))
-        # await self.bot.process_commands(message)
 
     @tasks.loop(seconds=1)
     async def speech_task(self):
@@ -307,7 +305,6 @@ class TTSBot(commands.Cog):
         voice_client = None
         for id, server in self.server_queues.get_queues().items():
             if server.is_queue_empty():
-                # print("this bitch EmPtY")
                 continue
             item = server.get_next()
             print(item)
@@ -323,7 +320,6 @@ class TTSBot(commands.Cog):
                     voice_client = item.ctx.voice_client
             if text and voice_client:
                 print(text)
-                # await asyncio.sleep(.2)  # hack because it needs time to connect for the first message
                 await self._speak_text(voice_client, text)
 
     def voice_checks(self, ctx_or_vc: Union[commands.Context, VoiceClient]):

@@ -113,4 +113,4 @@ class CogManager:
             return responce
 
     def load_all_cogs(self) -> List[str]:
-        return self.bot.load_extensions(self.get_cogs())
+        return self.bot.load_extensions(self.get_extentions())

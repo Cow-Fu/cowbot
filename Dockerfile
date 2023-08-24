@@ -14,7 +14,9 @@ RUN apk add --update --no-cache fish \
 	gcc \
 	g++  \
 	make \
-	curl
+	curl \
+	tzdata \
+	sqlite
 
 # configure neovim
 WORKDIR /root/.config

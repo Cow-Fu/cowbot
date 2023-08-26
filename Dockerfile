@@ -22,7 +22,7 @@ RUN git clone "https://github.com/Cow-Fu/kickstart.nvim.git"
 RUN mv kickstart.nvim nvim
 
 # install python lsp server
-RUN nvim --headless -c "Lazy sync" -c "MasonInstall python-lsp-server" -c qall
+RUN nvim --headless -c "Lazy sync" -c "MasonInstall python-lsp-server" -c "TSUpdate" -c qall
 
 # enable autocomplete of site packages
 RUN sed -i 's/false/true/' /root/.local/share/nvim/mason/packages/python-lsp-server/venv/pyvenv.cfg

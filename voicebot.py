@@ -169,7 +169,8 @@ class TTSBot(commands.Cog):
                     c = active_channels[0]
                     await c.connect()
                     return True
-                await ctx.send("You are not connected to a voice channel. You can use \"moo join <channel>\" to connect.")
+                await ctx.send("You are not connected to a voice channel. You can use \"moo join <channel>\" to connect.",
+                               delete_after=10)
                 return False
         return True
 

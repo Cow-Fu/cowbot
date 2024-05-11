@@ -1,0 +1,11 @@
+version: '3'
+services:
+    cowbot:
+      image: alpine:latest
+      build: .
+      container_name: cowbot-dev
+      command: tail -f /dev/null
+      # command: sleep 30
+      volumes:
+        - .:/code
+

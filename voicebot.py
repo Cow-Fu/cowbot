@@ -222,7 +222,7 @@ class TTSBot(commands.Cog):
               if message.author in self.auto_chatters:
                 ctx = await self.bot.get_context(message)
                 if await self.ensure_voice(ctx):
-                    text = self._smart_name_announce(message.content, message.author)                
+                    text = self._smart_name_announce(message.content, message.author)
                 self.queue.append({"text": text, "context": ctx})
         # await self.bot.process_commands(message)
 

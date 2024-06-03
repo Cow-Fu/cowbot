@@ -20,7 +20,7 @@ RUN apk add --update --no-cache fish \
 # configure neovim
 WORKDIR /root/.config
 RUN git clone "https://github.com/Cow-Fu/kickstart.nvim.git"
-RUN mv kickstart.nvim nvim
+# RUN mv "kickstart.nvim" "/root/.config/nvim"
 
 # install python lsp server
 RUN nvim --headless -c "Lazy sync" -c "MasonInstall python-lsp-server" -c qall
@@ -30,7 +30,8 @@ RUN sed -i 's/false/true/' /root/.local/share/nvim/mason/packages/python-lsp-ser
 
 # install requirements
 COPY ./requirements.txt /usr/src/requirements/
-RUN pip3 install -r /usr/src/requirements/requirements.txt -U
+RUN pip3 install -r /usr/src/requirements/requirements.txt -U --break-system-packages
 
-WORKDIR /usr/src/app
-CMD ['python3', 'cowbot.py']
+WORKDIR /code
+# CMD /usr/bin/fish
+# CMD ['python3', 'cowbot.py']

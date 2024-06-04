@@ -1,11 +1,6 @@
 
-
-from collections import UserList
 import re
-import nextcord
-
 from nextcord.ext import commands
-
 
 
 class SpeechSanitizer:

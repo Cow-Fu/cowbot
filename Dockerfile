@@ -20,8 +20,7 @@ RUN apk add --update --no-cache fish \
 
 # configure neovim
 WORKDIR /root/.config
-RUN git clone "https://github.com/Cow-Fu/kickstart.nvim.git"
-RUN mv kickstart.nvim nvim
+RUN git clone "https://github.com/Cow-Fu/.nvim.git"
 
 # install python lsp server
 RUN nvim --headless -c "Lazy sync" -c "MasonInstall python-lsp-server" -c qall

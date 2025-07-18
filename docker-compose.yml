@@ -1,0 +1,14 @@
+services:
+  cowbot-dev:
+    image: alpine:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - /home/nathan/Dev/Playground/python/cowbot/cowbot/cow/rocks/src:/usr/src/app:z
+      - $HOME/.gitconfig:/root/.gitconfig:z
+      - $HOME/.ssh:/root/.ssh:z
+    # command: tail -f /dev/null
+    command: fish
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t

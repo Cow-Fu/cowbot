@@ -3,7 +3,7 @@ from collections import deque
 from multiprocessing.dummy import active_children
 from operator import truediv
 import re
-from discord import Guild, VoiceChannel, VoiceClient
+from nextcord import Guild, VoiceChannel, VoiceClient
 from dotenv import load_dotenv
 import gtts
 import nextcord

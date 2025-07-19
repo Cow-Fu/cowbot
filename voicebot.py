@@ -1,18 +1,19 @@
 
+from SpeechSanitizer import SpeechSanitizer
+from TTSAccents import TTSAccents
+from VoiceStateChangeType import VoiceStateChangeType
 from collections import deque
-from multiprocessing.dummy import active_children
-from operator import truediv
-import re
-from nextcord import Guild, VoiceChannel, VoiceClient
 from dotenv import load_dotenv
-import gtts
-import nextcord
+from multiprocessing.dummy import active_children
+from nextcord import Guild, VoiceChannel, VoiceClient
 from nextcord import VoiceState, Member
 from nextcord.ext import commands, tasks
-from VoiceStateChangeType import VoiceStateChangeType
+from operator import truediv
+import gtts
+import json
+import nextcord
 import os
-from TTSAccents import TTSAccents
-from SpeechSanitizer import SpeechSanitizer
+import re
 
 # TODO have different class handle speech synthesis
 class TTSBot(commands.Cog):

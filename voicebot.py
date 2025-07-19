@@ -237,7 +237,7 @@ class TTSBot(commands.Cog):
 
     @autospeak.command(pass_context=True)
     async def off(self, ctx: commands.Context):
-        if not ctx.author in self.auto_chatters:
+        if ctx.author.id not in self.auto_chatters:
             await ctx.reply("You already have auto chat disabled!")
             return
         self.auto_chatters.remove(ctx.author.id)
@@ -253,14 +253,15 @@ class TTSBot(commands.Cog):
     
     @commands.Cog.listener()
     async def on_message(self, message: nextcord.Message):
-        message
-        if message.channel.id in [931798323021631548, 852807298912485376]: # hard code bad
-          if not message.content.lower().startswith("moo "):
-              if message.author in self.auto_chatters:
-                ctx = await self.bot.get_context(message)
-                if await self.ensure_voice(ctx):
-                    text = self._smart_name_announce(message.content, message.author)                
-                self.queue.append({"text": text, "context": ctx})
+        # hard code bad
+        if message.channel.id in [931798323021631548, 852807298912485376, 966845116641857638]:
+            if not message.content.lower().startswith("moo "):
+                if message.author.id in self.auto_chatters:
+                    ctx = await self.bot.get_context(message)
+                    if await self.ensure_voice(ctx):
+                        text = self._smart_name_announce(
+                            message.content, message.author)
+                    self.queue.append({"text": text, "context": ctx})
 
         # await self.bot.process_commands(message)
                   

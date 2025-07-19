@@ -29,8 +29,8 @@ def save_accent(accent):
 
 
 def save_autochatters(autochatters):
-    with open(FILE_NAMES.ACCENT, "w+") as f:
-        f.writelines(autochatters)
+    with open(FILE_NAMES.AUTOSPEAK, "w+") as f:
+        f.writelines([str(i) for i in autochatters])
 
 
 class TTSBot(commands.Cog):
@@ -52,10 +52,10 @@ class TTSBot(commands.Cog):
     async def on_ready(self):
         self.speech_task.start()
         print("Speech task started")
-        if os.path.exists("accent.txt"):
+        if os.path.exists(FILE_NAMES.ACCENT):
             with open(FILE_NAMES.ACCENT, "r") as f:
                 self.accent_manager.current_accent = f.read().strip()
-        if os.path.exists("autochatters.txt"):
+        if os.path.exists(FILE_NAMES.AUTOSPEAK):
             with open(FILE_NAMES.AUTOSPEAK, "r") as f:
                 self.auto_chatters = [int(i) for i in f.readlines()]
 

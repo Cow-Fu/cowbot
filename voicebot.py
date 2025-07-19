@@ -227,11 +227,11 @@ class TTSBot(commands.Cog):
     
     @autospeak.command(pass_context=True)
     async def on(self, ctx: commands.Context):
-        if ctx.author in self.auto_chatters:
+        if ctx.author.id in self.auto_chatters:
             await ctx.reply("You already have auto chat enabled!")
             return
         
-        self.auto_chatters.append(ctx.author)
+        self.auto_chatters.append(ctx.author.id)
         save_autochatters(self.auto_chatters)
         await ctx.reply("Auto chat has been enabled for you.")
 
@@ -240,7 +240,7 @@ class TTSBot(commands.Cog):
         if not ctx.author in self.auto_chatters:
             await ctx.reply("You already have auto chat disabled!")
             return
-        self.auto_chatters.remove(ctx.author)
+        self.auto_chatters.remove(ctx.author.id)
         save_autochatters(self.auto_chatters)
         await ctx.reply("Auto chat has been disabled for you.")
 

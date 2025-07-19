@@ -66,17 +66,18 @@ class TTSBot(commands.Cog):
         return state_type
 
     def _member_join(self, member: Member, voice_client: VoiceClient):
-        text = f"{member.display_name} has joined the chat."
-        self.priority_queue.append({"text": text, "vc": voice_client})
-        
+        if not member.id == self.id:
+            text = f"{member.display_name} has joined the chat."
+            self.priority_queue.append({"text": text, "vc": voice_client})
+
     async def _member_leave(self, member: Member, bot: commands.Bot, voice_client: VoiceClient, voice_state: VoiceState):
-        text = f"{member.display_name} has left the chat."
-        self.priority_queue.append({"text": text, "vc": voice_client})
-        
+        if not member.id == self.id:
+            text = f"{member.display_name} has left the chat."
+            self.priority_queue.append({"text": text, "vc": voice_client})
+
         if len(voice_state.channel.members) == 1:
             if voice_state.channel.members[0].id == self.id:
                 await voice_client.disconnect()
-                
     
     def _get_channel_from_state_change(self, before: VoiceState, after: VoiceState, voice_state_change: VoiceStateChangeType):
         channel = None

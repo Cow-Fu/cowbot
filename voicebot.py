@@ -16,6 +16,23 @@ import os
 import re
 
 # TODO have different class handle speech synthesis
+
+
+class FILE_NAMES:
+    ACCENT = "accent.txt"
+    AUTOSPEAK = "autospeak.txt"
+
+
+def save_accent(accent):
+    with open(FILE_NAMES.ACCENT, "w+") as f:
+        f.write(accent)
+
+
+def save_autochatters(autochatters):
+    with open(FILE_NAMES.ACCENT, "w+") as f:
+        f.writelines(autochatters)
+
+
 class TTSBot(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -35,6 +52,12 @@ class TTSBot(commands.Cog):
     async def on_ready(self):
         self.speech_task.start()
         print("Speech task started")
+        if os.path.exists("accent.txt"):
+            with open(FILE_NAMES.ACCENT, "r") as f:
+                self.accent_manager.current_accent = f.read().strip()
+        if os.path.exists("autochatters.txt"):
+            with open(FILE_NAMES.AUTOSPEAK, "r") as f:
+                self.auto_chatters = [int(i) for i in f.readlines()]
 
     def _get_voice_state_change_type(self, before: VoiceState, after: VoiceState):
         state_type = None
@@ -194,6 +217,7 @@ class TTSBot(commands.Cog):
         if arg.upper() in self.accent_manager.accents :
             self.accent_manager.current_accent = self.accent_manager.accents[arg.upper()]
             await ctx.reply("Accent updated.")
+            save_accent(self.accent_manager.current_accent)
             return
         await ctx.reply("Not a valid accent code.")
     
@@ -208,6 +232,7 @@ class TTSBot(commands.Cog):
             return
         
         self.auto_chatters.append(ctx.author)
+        save_autochatters(self.auto_chatters)
         await ctx.reply("Auto chat has been enabled for you.")
 
     @autospeak.command(pass_context=True)
@@ -216,6 +241,7 @@ class TTSBot(commands.Cog):
             await ctx.reply("You already have auto chat disabled!")
             return
         self.auto_chatters.remove(ctx.author)
+        save_autochatters(self.auto_chatters)
         await ctx.reply("Auto chat has been disabled for you.")
 
     def _smart_name_announce(self, message: str, author):

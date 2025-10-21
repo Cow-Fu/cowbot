@@ -1,0 +1,11 @@
+[project]
+name = "the-pasture"
+version = "2025.10.20.0"
+dependencies = [
+  "websockets",
+  "werkzeug"
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

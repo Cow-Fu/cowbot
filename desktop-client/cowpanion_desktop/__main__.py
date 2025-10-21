@@ -1,12 +1,16 @@
 import asyncio
 import sys
 
+import PySide6.QtCore as QtCore
 import PySide6.QtAsyncio as QtAsyncio
 
 from pathlib import Path
 
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 from PySide6.QtQml import QQmlApplicationEngine
+
+from cowpanion_desktop import rc_icons
 
 async def run_in_loop():
   while True:
@@ -16,8 +20,11 @@ async def run_in_loop():
 if __name__ == "__main__":
   app = QApplication()
 
-  initial_view_path = Path(__file__).parent / 'App' / 'Main.qml'
+  script_dir_path = Path(__file__).parent
+  initial_view_path = script_dir_path / 'App' / 'Main.qml'
   engine = QQmlApplicationEngine(str(initial_view_path))
+
+  app.setWindowIcon(QIcon(":/icons/tray.png"));
 
   engine.quit.connect(QApplication.quit)
 

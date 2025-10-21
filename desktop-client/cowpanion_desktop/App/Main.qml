@@ -13,6 +13,7 @@ Window {
   }
   SystemTrayIcon {
     visible: true
+    icon.source: "qrc:/icons/tray.png"
 
     onActivated: {
       main.show()
